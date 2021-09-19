@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "488711773154",
+    "project_id": "visionassistant-17f8c",
+    "storage_bucket": "visionassistant-17f8c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488711773154:android:ebebf753cfeb51d791f7bb",
+        "android_client_info": {
+          "package_name": "com.app.visionassistant"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "488711773154-l29jkntgrfk0imq9hpbg6cpn2dss9q42.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzV3QX-W4vNVo2oZpi0-fpB3K6eVlBqfE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "488711773154-l29jkntgrfk0imq9hpbg6cpn2dss9q42.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
