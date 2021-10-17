@@ -19,8 +19,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.app.visionassistant.databinding.ActivityMainBinding;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.ml.modeldownloader.CustomModel;
 import com.google.firebase.ml.modeldownloader.CustomModelDownloadConditions;
 import com.google.firebase.ml.modeldownloader.DownloadType;
 import com.google.firebase.ml.modeldownloader.FirebaseModelDownloader;
@@ -50,19 +48,22 @@ public class MainActivity extends AppCompatActivity {
         cameraLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             Intent data = result.getData();
             try{
+                assert data != null;
                 Bitmap picture = (Bitmap)data.getExtras().get("data");
                 binding.inputImv.setImageBitmap(picture);
             }catch (Exception e){
-                Log.d(TAG,"cameraLauncher's onActivityResult : "+e.getMessage());
+                Log.e(TAG, "cameraLauncher's onActivityResult : " + e.getMessage());
             }
         });
 
         galleryLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             Intent data = result.getData();
             try {
-                binding.inputImv.setImageURI(data.getData());
+                assert data != null;
+                Bitmap picture = MediaStore.Images.Media.getBitmap(this.getContentResolver(), data.getData());
+                binding.inputImv.setImageBitmap(picture);
             } catch (Exception e) {
-                Log.d(TAG, "cameraLauncher's onActivityResult : " + e.getMessage());
+                Log.e(TAG, "cameraLauncher's onActivityResult : " + e.getMessage());
             }
         });
 
@@ -71,21 +72,18 @@ public class MainActivity extends AppCompatActivity {
                 .build();
         FirebaseModelDownloader.getInstance()
                 .getModel("Object-Detector", DownloadType.LOCAL_MODEL_UPDATE_IN_BACKGROUND, conditions)
-                .addOnSuccessListener(new OnSuccessListener<CustomModel>() {
-                    @Override
-                    public void onSuccess(CustomModel model) {
+                .addOnSuccessListener(model -> {
 
-                        Toast.makeText(MainActivity.this, "Model Downloaded Successfully!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Model Downloaded Successfully!", Toast.LENGTH_SHORT).show();
 
-                        // Download complete. Depending on your app, you could enable the ML
-                        // feature, or switch from the local model to the remote model, etc.
+                    // Download complete. Depending on your app, you could enable the ML
+                    // feature, or switch from the local model to the remote model, etc.
 
-                        // The CustomModel object contains the local path of the model file,
-                        // which you can use to instantiate a TensorFlow Lite interpreter.
-                        File modelFile = model.getFile();
-                        if (modelFile != null) {
-                            interpreter = new Interpreter(modelFile);
-                        }
+                    // The CustomModel object contains the local path of the model file,
+                    // which you can use to instantiate a TensorFlow Lite interpreter.
+                    File modelFile = model.getFile();
+                    if (modelFile != null) {
+                        interpreter = new Interpreter(modelFile);
                     }
                 });
 
