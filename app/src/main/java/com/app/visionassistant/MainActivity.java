@@ -19,11 +19,15 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.app.visionassistant.databinding.ActivityMainBinding;
-import com.google.mlkit.vision.common.InputImage;
-import com.google.mlkit.vision.label.ImageLabel;
-import com.google.mlkit.vision.label.ImageLabeler;
-import com.google.mlkit.vision.label.ImageLabeling;
-import com.google.mlkit.vision.label.defaults.ImageLabelerOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.ml.modeldownloader.CustomModel;
+import com.google.firebase.ml.modeldownloader.CustomModelDownloadConditions;
+import com.google.firebase.ml.modeldownloader.DownloadType;
+import com.google.firebase.ml.modeldownloader.FirebaseModelDownloader;
+
+import org.tensorflow.lite.Interpreter;
+
+import java.io.File;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -35,8 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int WRITE_STORAGE_PERMISSION_CODE=103;
     private ActivityResultLauncher<Intent> cameraLauncher;
     private ActivityResultLauncher<Intent> galleryLauncher;
-    private InputImage inputImage;
-    private ImageLabeler imageLabeler;
+    private Interpreter interpreter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,15 +47,11 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(LayoutInflater.from(this));
         setContentView(binding.getRoot());
 
-        imageLabeler = ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS);
-
         cameraLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             Intent data = result.getData();
             try{
                 Bitmap picture = (Bitmap)data.getExtras().get("data");
                 binding.inputImv.setImageBitmap(picture);
-                inputImage = InputImage.fromBitmap(picture,0);
-                processImage();
             }catch (Exception e){
                 Log.d(TAG,"cameraLauncher's onActivityResult : "+e.getMessage());
             }
@@ -60,21 +59,42 @@ public class MainActivity extends AppCompatActivity {
 
         galleryLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             Intent data = result.getData();
-            try{
+            try {
                 binding.inputImv.setImageURI(data.getData());
-                inputImage = InputImage.fromFilePath(MainActivity.this,data.getData());
-                processImage();
-            }catch (Exception e){
-                Log.d(TAG,"cameraLauncher's onActivityResult : "+e.getMessage());
+            } catch (Exception e) {
+                Log.d(TAG, "cameraLauncher's onActivityResult : " + e.getMessage());
             }
         });
+
+        CustomModelDownloadConditions conditions = new CustomModelDownloadConditions.Builder()
+                .requireWifi()  // Also possible: .requireCharging() and .requireDeviceIdle()
+                .build();
+        FirebaseModelDownloader.getInstance()
+                .getModel("Object-Detector", DownloadType.LOCAL_MODEL_UPDATE_IN_BACKGROUND, conditions)
+                .addOnSuccessListener(new OnSuccessListener<CustomModel>() {
+                    @Override
+                    public void onSuccess(CustomModel model) {
+
+                        Toast.makeText(MainActivity.this, "Model Downloaded Successfully!", Toast.LENGTH_SHORT).show();
+
+                        // Download complete. Depending on your app, you could enable the ML
+                        // feature, or switch from the local model to the remote model, etc.
+
+                        // The CustomModel object contains the local path of the model file,
+                        // which you can use to instantiate a TensorFlow Lite interpreter.
+                        File modelFile = model.getFile();
+                        if (modelFile != null) {
+                            interpreter = new Interpreter(modelFile);
+                        }
+                    }
+                });
 
         binding.choosePictureMb.setOnClickListener(view -> {
             String[] options = {"Camera", "Gallery"};
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("Select an Option");
             builder.setItems(options, (dialogInterface, i) -> {
-                if(i==0){
+                if (i == 0) {
                     Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     cameraLauncher.launch(cameraIntent);
                 }
@@ -89,15 +109,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void processImage() {
-        imageLabeler.process(inputImage).addOnSuccessListener(imageLabels -> {
-            StringBuilder result= new StringBuilder();
-            for(ImageLabel label:imageLabels){
-                result.append(label.getText()).append("\n");
-            }
-            binding.resultTv.setText(result.toString());
-        }).addOnFailureListener(e -> Toast.makeText(MainActivity.this, "Image processing Failed !!", Toast.LENGTH_SHORT).show());
-    }
 
     @Override
     protected void onResume() {
